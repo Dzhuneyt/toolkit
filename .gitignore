@@ -1,0 +1,12 @@
+# OS
+.DS_Store
+
+# Editor cruft
+*.swp
+*~
+
+# Node
+node_modules/
+
+# Claude Code machine-local settings (the rest of .claude/ is tracked)
+.claude/settings.local.json
