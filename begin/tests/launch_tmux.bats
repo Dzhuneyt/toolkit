@@ -4,7 +4,7 @@ load test_helper/common
 
 # These tests assert the create/attach/disambiguate DECISIONS by replacing the
 # real `tmux` with a fake on PATH that records its args and answers
-# has-session / show-options from small state files. No tmux server runs.
+# list-sessions / show-options from small state files. No tmux server runs.
 
 setup() {
   _common_setup
@@ -18,29 +18,29 @@ setup() {
   : >"${PATHS}"
   export TMUX_LOG SESSIONS PATHS
 
-  # Build the fake tmux.
+  # Build the fake tmux. Mirrors the real seam: existence via `list-sessions`,
+  # everything else targeted by plain name (no `=` prefix).
   mkdir -p "${WORK}/bin"
   cat >"${WORK}/bin/tmux" <<'FAKE'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >>"$TMUX_LOG"
 sub="$1"; shift
-# Pull a -t target (form "=name") out of the remaining args.
+# Pull a -t target (plain name) out of the remaining args.
 target=""
 while [ $# -gt 0 ]; do
   [ "$1" = "-t" ] && { target="$2"; shift 2; continue; }
   shift
 done
-name="${target#=}"
 case "$sub" in
-  has-session)
-    grep -qx "$name" "$SESSIONS" && exit 0 || exit 1 ;;
+  list-sessions)
+    cat "$SESSIONS" ;;                                   # one name per line
   show-options)
-    line="$(grep -P "^${name}\t" "$PATHS" 2>/dev/null || grep "^${name}	" "$PATHS")"
-    printf '%s' "${line#*$'\t'}" ; exit 0 ;;
+    awk -F'\t' -v n="$target" '$1==n{print $2}' "$PATHS" ;;
   new-session|set-option|attach-session)
-    exit 0 ;;
-  *) exit 0 ;;
+    : ;;
+  *) : ;;
 esac
+exit 0
 FAKE
   chmod +x "${WORK}/bin/tmux"
   PATH="${WORK}/bin:${PATH}"
@@ -60,8 +60,8 @@ teardown() {
 
   run cat "${TMUX_LOG}"
   assert_line --partial 'new-session -d -s web -c /home/user/projects/acme/web claude; exec "$SHELL"'
-  assert_line --partial 'set-option -t =web @begin_path /home/user/projects/acme/web'
-  assert_line --partial 'attach-session -t =web'
+  assert_line --partial 'set-option -t web @begin_path /home/user/projects/acme/web'
+  assert_line --partial 'attach-session -t web'
 }
 
 @test "same project: existing session with matching path -> attach, no new-session" {
@@ -72,7 +72,7 @@ teardown() {
   assert_success
 
   run cat "${TMUX_LOG}"
-  assert_line --partial 'attach-session -t =web'
+  assert_line --partial 'attach-session -t web'
   refute_line --partial 'new-session'
 }
 
@@ -85,5 +85,5 @@ teardown() {
 
   run cat "${TMUX_LOG}"
   assert_line --partial 'new-session -d -s acme_web -c /home/user/projects/acme/web'
-  assert_line --partial 'set-option -t =acme_web @begin_path /home/user/projects/acme/web'
+  assert_line --partial 'set-option -t acme_web @begin_path /home/user/projects/acme/web'
 }
