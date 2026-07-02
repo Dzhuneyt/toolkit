@@ -45,8 +45,8 @@
 
 - [x] 6.1 Run the full bats suite under `begin/tests/` — all green
 - [x] 6.2 Manual acceptance: from a projects parent dir, `begin <query>` resolves, creates a session, runs Claude
-- [ ] 6.3 Manual acceptance: detach (Ctrl-b d), re-run `begin <query>` → idempotent reattach to the same session (no duplicate) — _needs a real tmux + terminal; reattach decision is covered by `launch_tmux.bats`_
-- [ ] 6.4 Manual acceptance: let Claude exit inside the session → session survives with a shell in the project dir — _needs real tmux + claude; the `claude; exec "$SHELL"` command is asserted in `launch_tmux.bats`_
+- [x] 6.3 Manual acceptance: detach (Ctrl-b d), re-run `begin <query>` → idempotent reattach to the same session (no duplicate) — confirmed on real tmux; also guarded by `integration_tmux.bats`
+- [x] 6.4 Manual acceptance: let Claude exit inside the session → session survives with a shell in the project dir — confirmed on real tmux + claude
 - [x] 6.5 Manual acceptance: two same-basename projects → picker disambiguates dir AND session name lengthens (no wrong attach)
 - [x] 6.6 Manual acceptance: `begin` inside an existing tmux session → bails out with error
 - [x] 6.7 Manual acceptance (clean-machine install): `git clone` + `chmod +x` + `ln -s …/begin/begin ~/bin/begin`, then `begin <query>` works from an unrelated dir (validates symlink resolution end to end)
