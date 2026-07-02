@@ -10,6 +10,7 @@ without stepping on each other.
 | Tool | What it does |
 |------|--------------|
 | [`begin/`](begin/) | Find a project under the current directory and drop into a durable Claude Code tmux session inside it. |
+| [`claude-notify/`](claude-notify/) | Desk + sound + phone-push notifications fired by Claude Code Stop/Notification hooks. |
 
 ## Conventions
 

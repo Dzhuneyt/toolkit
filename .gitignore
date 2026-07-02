@@ -10,3 +10,6 @@ node_modules/
 
 # Claude Code machine-local settings (the rest of .claude/ is tracked)
 .claude/settings.local.json
+
+# claude-notify: real ntfy topic is a secret; only the .example is committed
+claude-notify/ntfy.env
