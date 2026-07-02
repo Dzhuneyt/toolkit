@@ -46,4 +46,4 @@
 - [x] 6.6 Manual acceptance: per-event sounds fired (Sosumi permission_prompt, Glass on Stop)
 - [x] 6.7 Manual acceptance: real `~/.claude/hooks/ntfy.env` present → phone push path executed during verify (confirm receipt on device)
 - [x] 6.8 Manual acceptance: `CLAUDE_NOTIFY_MUTE_WHILE=WindowServer` → suppressed, exit 0
-- [ ] 6.9 CI green on the path-filtered workflow (pending push)
+- [x] 6.9 CI green on the path-filtered workflow (PR #2, bats 3/3 pass)
