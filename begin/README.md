@@ -68,7 +68,7 @@ begin/
     match.sh       # filter_by_query, count_lines        (pure)
     select.sh      # choose_interactive, nth_line
     session.sh     # sanitize_name, session_name_for, lengthen, unique_session_name (pure)
-    tmux.sh        # session_exists, session_path, create_session, attach_session
+    tmux.sh        # session_exists, session_path, start_session, create_session, attach_session
     launch.sh      # launch_session — composes naming + tmux
   tests/           # bats-core suite; run.sh runs it via Docker (no host install)
 ```
@@ -88,3 +88,7 @@ begin/tests/run.sh
 That mounts `begin/` read-only into `bats/bats` and runs the suite. Requires
 only Docker. (The test helpers under `tests/test_helper/common.bash` are a small
 self-contained shim, so no `bats-assert`/`bats-support` libraries are needed.)
+
+`run.sh` also installs tmux inside the container so the real-tmux integration
+tests (`tests/integration_tmux.bats`) run rather than self-skip; the remaining
+unit tests shadow `tmux` with a fake on PATH.
