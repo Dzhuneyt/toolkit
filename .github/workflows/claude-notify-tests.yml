@@ -1,0 +1,23 @@
+name: claude-notify tests
+
+# Path-filtered to the claude-notify/ component so unrelated tools in this
+# multi-tool repo don't trigger it. Runs the bats-core smoke test inside Docker
+# (no host install); the daemon-less runner is also the degradation path.
+on:
+  push:
+    paths:
+      - 'claude-notify/**'
+      - '.github/workflows/claude-notify-tests.yml'
+  pull_request:
+    paths:
+      - 'claude-notify/**'
+      - '.github/workflows/claude-notify-tests.yml'
+
+jobs:
+  bats:
+    runs-on: ubuntu-latest  # Docker is preinstalled on GitHub-hosted Ubuntu runners
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run claude-notify test suite (bats-core via Docker)
+        run: bash claude-notify/tests/run.sh
