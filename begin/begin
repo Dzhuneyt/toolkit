@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+#
+# begin — find a project under the current directory and drop into a durable
+#         Claude Code tmux session inside it. Purely local; no ssh/mosh.
+#
+# Decomposed into lib/ units; this entrypoint only resolves its own location,
+# sources the units, and composes them. Kept bash-3.2 compatible (macOS) — no
+# associative arrays, mapfile, or namerefs.
+
+set -euo pipefail
+
+# --- Resolve this script's REAL directory, following symlinks. -----------------
+# Installed via `ln -s <repo>/begin/begin ~/bin/begin`, so $0 is the symlink but
+# lib/ lives beside the real file. Portable: no `readlink -f` (absent on BSD/macOS).
+__begin_source="${BASH_SOURCE[0]}"
+while [ -L "$__begin_source" ]; do
+  __begin_dir="$(cd -P "$(dirname "$__begin_source")" >/dev/null 2>&1 && pwd)"
+  __begin_source="$(readlink "$__begin_source")"
+  case "$__begin_source" in
+    /*) : ;;                                    # already absolute
+    *) __begin_source="$__begin_dir/$__begin_source" ;;
+  esac
+done
+BEGIN_DIR="$(cd -P "$(dirname "$__begin_source")" >/dev/null 2>&1 && pwd)"
+LIB="$BEGIN_DIR/lib"
+
+# --- Source the units. ---------------------------------------------------------
+# shellcheck source=lib/usage.sh
+source "$LIB/usage.sh"
+source "$LIB/guards.sh"
+source "$LIB/resolve.sh"
+source "$LIB/match.sh"
+source "$LIB/select.sh"
+source "$LIB/session.sh"
+source "$LIB/tmux.sh"
+source "$LIB/launch.sh"
+
+main() {
+  local query="${1:-}"
+
+  # No args / help short-circuits BEFORE any guards or resolution.
+  if [[ -z "$query" || "$query" == "-h" || "$query" == "--help" ]]; then
+    usage
+    exit 0
+  fi
+
+  assert_not_in_tmux || exit 1
+  require_tools || exit 1
+
+  # Resolve: downward search, then pure substring filter.
+  local candidates n
+  candidates="$(find_candidates | filter_by_query "$query" || true)"
+  n="$(count_lines "$candidates")"
+
+  # Fallback to zoxide only when the downward search found nothing.
+  if [[ "$n" -eq 0 ]]; then
+    candidates="$(zoxide_fallback "$query" || true)"
+    n="$(count_lines "$candidates")"
+    if [[ "$n" -eq 0 ]]; then
+      printf 'begin: no project matching "%s" found under %s\n' "$query" "$PWD" >&2
+      exit 1
+    fi
+  fi
+
+  local dir
+  if [[ "$n" -eq 1 ]]; then
+    dir="$candidates"
+  else
+    dir="$(choose_interactive "$candidates" || true)"
+  fi
+  [[ -z "$dir" ]] && { printf 'begin: nothing selected\n' >&2; exit 1; }
+
+  # Normalize to an absolute path — required for stable session identity.
+  dir="$(cd "$dir" >/dev/null 2>&1 && pwd)" \
+    || { printf 'begin: cannot enter directory: %s\n' "$dir" >&2; exit 1; }
+
+  launch_session "$dir"
+}
+
+main "$@"

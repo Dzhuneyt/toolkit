@@ -1,0 +1,22 @@
+name: begin tests
+
+# Path-filtered to the begin/ component so unrelated tools in this multi-tool
+# repo don't trigger it. Runs the bats-core suite inside Docker (no host install).
+on:
+  push:
+    paths:
+      - 'begin/**'
+      - '.github/workflows/begin-tests.yml'
+  pull_request:
+    paths:
+      - 'begin/**'
+      - '.github/workflows/begin-tests.yml'
+
+jobs:
+  bats:
+    runs-on: ubuntu-latest  # Docker is preinstalled on GitHub-hosted Ubuntu runners
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run begin test suite (bats-core via Docker)
+        run: bash begin/tests/run.sh
