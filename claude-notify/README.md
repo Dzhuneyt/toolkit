@@ -91,12 +91,23 @@ path, exercised by the test).
 | `NTFY_SERVER`               | `https://ntfy.sh`    | ntfy server, for self-hosting. Set in `ntfy.env`.                   |
 | `CLAUDE_NOTIFY_TERM_BUNDLE` | `com.cmuxterm.app`   | bundle id brought to front on banner click. Set per box.           |
 | `CLAUDE_NOTIFY_MUTE_WHILE`  | `CptHost`            | space-separated process names; any running → suppress + exit 0.     |
+| `NTFY_IDLE_GATE_ENABLED`    | `1`                  | `0` disables the idle check below. Set in `ntfy.env`.               |
+| `NTFY_IDLE_THRESHOLD_SECONDS` | `180`              | phone push skipped if desk idle time (via `ioreg` HIDIdleTime) is below this. Set in `ntfy.env`. |
+| `NTFY_QUIET_HOURS_ENABLED`  | `1`                  | `0` disables the quiet-hours window below. Set in `ntfy.env`.       |
+| `NTFY_QUIET_HOURS_START`    | `22`                 | quiet-hours start, 24h local clock. Set in `ntfy.env`.              |
+| `NTFY_QUIET_HOURS_END`      | `8`                  | quiet-hours end, 24h local clock; window wraps past midnight. Set in `ntfy.env`. |
 
 `CLAUDE_NOTIFY_TERM_BUNDLE` and `CLAUDE_NOTIFY_MUTE_WHILE` default to the author's
 machine (cmux terminal, Zoom) — override them via the environment on other boxes.
 A commented-out **Do-Not-Disturb** check also lives in the script as an example;
 it reads an undocumented internal macOS DB, so it's left commented rather than
 promoted to a supported knob.
+
+The idle and quiet-hours gates only suppress the **phone push** — the desk
+notification (banner + sound) always fires, since it's local and free. Idle
+time comes from `ioreg -c IOHIDSystem`'s `HIDIdleTime` (macOS only); on a
+non-macOS host the idle gate silently no-ops (never suppresses) since the
+field is absent.
 
 ## Sound map
 

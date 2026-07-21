@@ -97,7 +97,41 @@ fi
 # hook or breaks the desk notification above if the network is down.
 ntfy_config="$HOME/.claude/hooks/ntfy.env"
 [ -f "$ntfy_config" ] && . "$ntfy_config"
-if [ -n "${NTFY_TOPIC:-}" ]; then
+
+# Skip the phone push (desk notification above still fires) when the desk
+# itself already puts the alert in front of you: machine used within the
+# idle threshold, or inside the configured quiet-hours window. Either gate
+# can be disabled by setting its var to 0 in ntfy.env.
+ntfy_skip_reason=""
+
+if [ "${NTFY_IDLE_GATE_ENABLED:-1}" != "0" ]; then
+  idle_threshold="${NTFY_IDLE_THRESHOLD_SECONDS:-180}"
+  idle_ns=$(ioreg -c IOHIDSystem | awk -F'= ' '/HIDIdleTime/ {print $2; exit}')
+  if [ -n "$idle_ns" ]; then
+    idle_seconds=$(( idle_ns / 1000000000 ))
+    if [ "$idle_seconds" -lt "$idle_threshold" ]; then
+      ntfy_skip_reason="active desk (idle ${idle_seconds}s < ${idle_threshold}s)"
+    fi
+  fi
+fi
+
+if [ -z "$ntfy_skip_reason" ] && [ "${NTFY_QUIET_HOURS_ENABLED:-1}" != "0" ]; then
+  quiet_start="${NTFY_QUIET_HOURS_START:-22}"
+  quiet_end="${NTFY_QUIET_HOURS_END:-8}"
+  hour=$((10#$(date +%H)))
+  # Window may wrap past midnight (e.g. 22 -> 8), so the in-range test differs
+  # depending on whether start comes before or after end on the 24h clock.
+  if [ "$quiet_start" -lt "$quiet_end" ]; then
+    in_quiet_hours=$([ "$hour" -ge "$quiet_start" ] && [ "$hour" -lt "$quiet_end" ] && echo 1)
+  else
+    in_quiet_hours=$([ "$hour" -ge "$quiet_start" ] || [ "$hour" -lt "$quiet_end" ] && echo 1)
+  fi
+  [ -n "$in_quiet_hours" ] && ntfy_skip_reason="quiet hours (${quiet_start}:00-${quiet_end}:00)"
+fi
+
+if [ -n "${NTFY_TOPIC:-}" ] && [ -n "$ntfy_skip_reason" ]; then
+  : # phone push suppressed — see ntfy_skip_reason; desk notification already fired above
+elif [ -n "${NTFY_TOPIC:-}" ]; then
   # Priority + tag per event so the phone alert reads at a glance
   case "$event" in
     Notification) ntfy_priority="high";    ntfy_tags="bell" ;;
